@@ -1,0 +1,108 @@
+
+启动zookeeper，kafka
+
+  启动zookeeper
+  /home/liyang/hadoop/zookeeper-3.4.5/bin/zkServer.sh start
+  /home/liyang/hadoop/zookeeper-3.4.5/bin/zkServer.sh stop
+
+ kafka启动
+ nohup /home/liyang/spark/kafka_2.10-0.8.2.1/bin/kafka-server-start.sh            /home/liyang/spark/kafka_2.10-0.8.2.1/config/server.properties &
+ 
+ kafka停止：
+ /home/liyang/spark/kafka_2.10-0.8.2.1/bin/kafka-server-stop.sh            /home/liyang/spark/kafka_2.10-0.8.2.1/config/server.properties
+----------------------------
+logstash
+
+java模拟日志采集数据
+java -jar /home/liyang/myjar/file2file.jar /home/liyang/spark/logs/nginx_logs/src/track.log /home/liyang/spark/logs/nginx_logs/dis/track_bak.log
+
+
+创建kafka topic
+ ./kafka-topics.sh \
+> --create --zookeeper master:2181 \
+> --replication-factor 3 \
+> --partitions 3 \
+> --topic accesslog
+
+启动logstash，采集页面的数据
+从页面app采集数据   track.log
+/home/liyang/spark/logstash-2.3.1/bin/logstash agent -f /home/liyang/spark/logstash-2.3.1/conf/flow-kafka.conf
+
+从服务器采集数据
+/home/liyang/spark/logstash-2.3.1/bin/logstash agent -f /home/liyang/spark/logstash-2.3.1/conf/gs-kafka.conf
+
+
+观看kafka consumer的数据
+/home/liyang/spark/kafka_2.10-0.8.2.1/bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic gamelog --from-beginning
+
+kafka到HDFS，可以用logsatsh或flume？？？？
+-----------------------------------
+ES
+
+启动es（/home/liyang/spark/elasticsearch-2.3.1/bin/elasticsearch -h查看帮助文档） 
+/home/liyang/spark/elasticsearch-2.3.1/bin/elasticsearch -d
+
+es离线安装head插件
+/home/liyang/spark/elasticsearch-2.3.1/bin/plugin install file:///home/liyang/software/elasticsearch-head-master.zip
+
+#向store索引中添加一些书籍
+curl -XPUT 'http://192.168.10.128:9200/store/books/1' -d '{
+  "title": "Elasticsearch: The Definitive Guide",
+  "name" : {
+    "first" : "Zachary",
+    "last" : "Tong"
+  },
+  "publish_date":"2015-02-06",
+  "price":"49.99"
+}'
+
+#在linux中通过curl的方式查询
+curl -XGET 'http://192.168.10.128:9200/store/books/1'
+
+#在添加一个书的信息
+curl -XPUT 'http://192.168.10.128:9200/store/books/2' -d '{
+  "title": "Elasticsearch Blueprints",
+  "name" : {
+    "first" : "Vineeth",
+    "last" : "Mohan"
+  },
+  "publish_date":"2015-06-06",
+  "price":"35.99"
+}'
+
+#在添加一个书的信息
+curl -XPUT 'http://192.168.10.128:9200/store/books/2' -d '{
+  "title": "Elasticsearch Blueprints",
+  "name" : {
+    "first" : "Vineeth",
+    "last" : "Mohan"
+  },
+  "publish_date":"2015-06-06",
+  "price":"35.99"
+}'
+
+
+# 或者通过 _update  API的方式单独更新你想要更新的
+curl -XPOST 'http://192.168.10.128:9200/store/books/1/_update' -d '{
+  "doc": {
+     "price" : 88.88
+  }
+}'
+
+curl -XGET 'http://192.168.10.128:9200/store/books/_search' -d '{
+    "query" : {
+        "filtered" : {
+            "filter" : {
+                "terms" : {
+                    "price" : [35.99, 99.99]
+                  }
+              }
+        }
+    }
+}'
+
+kafka=》es
+/home/liyang/spark/logstash-2.3.1/bin/logstash agent -f /home/liyang/spark/logstash-2.3.1/conf/kafka-es.conf
+
+crtl+alt+v  补全代码
+
